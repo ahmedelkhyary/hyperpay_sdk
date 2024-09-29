@@ -17,6 +17,7 @@
 @class OPPThreeDSConfig;
 @class OPPBinInfo;
 @class Warning;
+@class OPPCheckoutData;
 
 /// An enumeration for the various provider modes.
 typedef NS_ENUM(NSInteger, OPPProviderMode) {
@@ -136,6 +137,18 @@ NS_ASSUME_NONNULL_BEGIN
                    completionHandler:(void (^)(OPPBinInfo * _Nullable binInfo,
                                                NSError * _Nullable error))completionHandler;
 
+/**
+ Requests a list of iDeal banks.
+ 
+ This method is deprecated.
+ 
+ @param checkoutID The checkout ID of a transaction.
+ @param completionHandler The completion block which will be invoked once the response is received. On success, you will receive a list of banks in array, and on failure an error is received.
+ */
+- (void)requestIdealBanksWithCheckoutID:(nonnull NSString *)checkoutID
+                      completionHandler:(void (^)(NSArray <NSDictionary *> * _Nullable banks,
+                                                  NSError * _Nullable error))completionHandler __attribute__ ((deprecated));
+
 /// @name 3D Secure
 /**
  The ipworks3ds SDK performs security checks in order to provide a  list of `Warning` objects. These can be checked by the app to determine whether or not to proceed with the checkout process.
@@ -179,5 +192,23 @@ NS_ASSUME_NONNULL_BEGIN
  */
 + (BOOL)isDeviceAuthenticationAvailable;
 
+/**
+ Requests a Apple's  recurring payments tokenId.
+ 
+ @param checkoutID The checkout ID of a transaction.
+ @param completionHandler The completion block which will be invoked once the response is received. On success, you will receive a tokenId, and on failure an error is received.
+ */
+- (void)requestApplesTokenIdWithCheckoutID:(nonnull NSString *)checkoutID
+                         completionHandler:(void (^)(NSString * _Nullable tokenId,
+                                                     NSError * _Nullable error))completionHandler;
+
+/**
+ Requests a Checkout payment data
+ 
+ @param checkoutID The checkout ID of a transaction.
+ @param completionHandler The completion block which will be invoked once the response is received. On success, you will receive an OPPCheckoutData ojbect with payment data, and on failure an error is received.
+ */
+- (void)requestCheckoutDataWithCheckoutID:(nonnull NSString *)checkoutID
+                        completionHandler:(void (^)(OPPCheckoutData * _Nullable checkoutData, NSError * _Nullable error))completionHandler;
 @end
 NS_ASSUME_NONNULL_END
