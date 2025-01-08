@@ -137,6 +137,21 @@ typedef NS_ENUM(NSInteger, OPPThreeDS2Status) {
  */
 - (BOOL)isChallengeRequired;
 
+/// :nodoc:
+- (void)updateThreeDSFlow:(OPPThreeDS2Flow)flow;
+
+/// :nodoc:
+- (void)updateThreeDSConfig:(nullable OPPThreeDSSchemeConfig*)config;
+
+/// :nodoc:
+- (void)updateAuthStatus:(OPPThreeDS2Status)authStatus;
+
+/// :nodoc:
+- (void)updateAuthResponse:(nullable NSString*)authResponse;
+
+/// :nodoc:
++ (OPPThreeDS2Status)authStatusFromString:(nonnull NSString *)statusString;
+
 @end
 
 NS_ASSUME_NONNULL_END

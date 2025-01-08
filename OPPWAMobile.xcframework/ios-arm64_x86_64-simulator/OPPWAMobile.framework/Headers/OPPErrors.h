@@ -136,6 +136,9 @@ typedef NS_ENUM(NSInteger, OPPErrorCode) {
     
     /// Affirm Payments specific error.
     OPPErrorCodeAffirm = 5008,
+    
+    /// AmazonPay Payments specific error.
+    OPPErrorCodeAmazonPay = 5009,
 
     /// 3-D Secure 2 transaction error.
     OPPErrorCodeThreeDS2Failure = 6000,
@@ -246,6 +249,9 @@ typedef NS_ENUM(NSInteger, OPPErrorCode) {
  
  ###Cash App Pay errors:
  - 5007: Cash App Pay specific error.
+ 
+ ###AmazonPay errors:
+ - 5009: AmazonPay specific error.
  
  ###3-D Secure 2 errors:
  - 6000: 3-D Secure 2 transaction error.

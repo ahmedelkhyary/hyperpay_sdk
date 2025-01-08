@@ -75,6 +75,9 @@ typedef NS_ENUM(NSInteger, OPPYooKassaStatus) {
 /// The URL string to notify backend about payment completion.
 @property (nonatomic, copy, readonly, nullable) NSString *callbackUrl;
 
+/// :nodoc:
++ (OPPYooKassaStatus)statusFromString:(nonnull NSString *)statusString;
+
 @end
 
 NS_ASSUME_NONNULL_END
