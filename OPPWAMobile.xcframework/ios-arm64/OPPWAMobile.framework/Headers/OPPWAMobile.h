@@ -75,3 +75,8 @@
 #import "OPPApplePayDelegate.h"
 #import "OPPCheckoutProvider+DeviceAuth.h"
 #import "OPPWAPaymentProvider.h"
+#import "OPPThreeDSManager.h"
+#import "OPPErrors+Private.h"
+#import "OPPPaymentParams+Brand.h"
+#import "OPPThreeDSMpgs.h"
+#import "OPPThreeDSViewController.h"

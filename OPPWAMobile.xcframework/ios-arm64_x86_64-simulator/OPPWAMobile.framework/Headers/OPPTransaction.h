@@ -87,6 +87,24 @@ NS_ASSUME_NONNULL_BEGIN
  */
 @property (nonatomic, readonly, nullable) NSDictionary<NSString *, NSString *> *brandSpecificInfo;
 
+/// :nodoc:
+- (void)updateTransactionType:(OPPTransactionType)type;
+
+/// :nodoc:
+- (void)updateThreeDSInfo:(nullable OPPThreeDS2Info*)info;
+
+/// :nodoc:
+- (void)updateYooKassaInfo:(nullable OPPYooKassaInfo*)info;
+
+/// :nodoc:
+- (void)updateBrandSpecificInfo:(nullable NSDictionary<NSString *, NSString *>*)info;
+
+/// :nodoc:
+- (void)updateMPGSTransactionFlag:(Boolean)flag;
+
+/// :nodoc:
+- (Boolean)getIsMPGSTransactionStatus;
+
 /**
 Constant for a key to get Klarna Payments client token value from the transaction response.
 */
