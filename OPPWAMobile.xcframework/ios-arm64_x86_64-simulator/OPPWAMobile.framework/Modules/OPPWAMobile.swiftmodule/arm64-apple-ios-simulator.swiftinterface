@@ -1,5 +1,5 @@
 // swift-interface-format-version: 1.0
-// swift-compiler-version: Apple Swift version 6.0 effective-5.10 (swiftlang-6.0.0.9.10 clang-1600.0.26.2)
+// swift-compiler-version: Apple Swift version 6.0.2 effective-5.10 (swiftlang-6.0.2.1.2 clang-1600.0.26.4)
 // swift-module-flags: -target arm64-apple-ios12.0-simulator -enable-objc-interop -enable-library-evolution -swift-version 5 -enforce-exclusivity=checked -O -enable-bare-slash-regex -module-name OPPWAMobile
 // swift-module-flags-ignorable: -no-verify-emitted-module-interface
 import Foundation
@@ -24,6 +24,7 @@ import ipworks3ds_sdk
   @objc public var deviceParameterBlacklist: [Swift.String]?
   @objc public var uiCustomization: ipworks3ds_sdk.UiCustomization
   @objc public var threeDSRequestorAppURL: Swift.String?
+  @objc public var isBrowserDataRequired: Swift.Bool
   @objc override dynamic public init()
   @objc public func getClientConfig() -> Swift.Set<Swift.String>
   @objc public func getUngroupedConfigParams() -> [Swift.String : Swift.String]
@@ -75,8 +76,41 @@ import ipworks3ds_sdk
   @objc override dynamic public init()
   @objc deinit
 }
+extension OPPWAMobile.OPPSThreeDSManager : ipworks3ds_sdk.SecurityEventListener {
+  @objc dynamic public func alarm(_ severity: ipworks3ds_sdk.Severity, _ event: ipworks3ds_sdk.SecurityEvent)
+}
+extension OPPWAMobile.OPPSThreeDSManager : ipworks3ds_sdk.ClientEventListener {
+  @objc dynamic public func onDataPacketIn(_ dataPacket: Foundation.Data)
+  @objc dynamic public func onDataPacketOut(_ dataPacket: Foundation.Data)
+  @objc dynamic public func onError(_ errorCode: Swift.Int32, _ description: Swift.String)
+  @objc dynamic public func onLog(_ logLevel: Swift.Int32, _ message: Swift.String, _ logType: Swift.String)
+  @objc dynamic public func onSSLServerAuthentication(_ certEncoded: Foundation.Data, _ certSubject: Swift.String, _ certIssuer: Swift.String, _ status: Swift.String, _ accept: Swift.UnsafeMutablePointer<Swift.Int32>)
+  @objc dynamic public func onSSLStatus(_ message: Swift.String)
+}
+extension OPPWAMobile.OPPSThreeDSManager : ipworks3ds_sdk.ChallengeStatusReceiver {
+  @objc dynamic public func completed(_ completionEvent: ipworks3ds_sdk.CompletionEvent)
+  @objc dynamic public func cancelled()
+  @objc dynamic public func timedout()
+  @objc dynamic public func protocolError(_ protocolErrorEvent: ipworks3ds_sdk.ProtocolErrorEvent)
+  @objc dynamic public func runtimeError(_ runtimeErrorEvent: ipworks3ds_sdk.RuntimeErrorEvent)
+}
 @objc public protocol OPPLoggerServiceProtocol {
   @objc func sendLog(messages: [OPPWAMobile.OPPLogMessage], checkoutID: Swift.String, mode: OPPWAMobile.OPPProviderMode, _ completionHandler: @escaping (Swift.Bool) -> Swift.Void)
+}
+@objc final public class OPPWAProcessorService : ObjectiveC.NSObject, OPPWAMobile.OPPWAProcessorServiceProtocol {
+  final public let mode: OPPWAMobile.OPPProviderMode
+  final public let parser: OPPWAMobile.OPPWAResponseParser
+  @objc public init(mode: OPPWAMobile.OPPProviderMode, parser: OPPWAMobile.OPPWAResponseParser)
+  @objc final public func sendTransaction(for transaction: OPPWAMobile.OPPTransaction, endpoint: Swift.String, _ completionHandler: @escaping (OPPWAMobile.OPPTransaction, Foundation.NSError?) -> Swift.Void)
+  @objc final public func checkoutInfo(for checkoutID: Swift.String, _ completionHandler: @escaping (OPPWAMobile.OPPCheckoutInfo?, Foundation.NSError?) -> Swift.Void)
+  @objc final public func logoUrls(for brands: [Swift.String], _ completionHandler: @escaping ([Swift.String : Foundation.URL]?, Foundation.NSError?) -> Swift.Void)
+  @objc final public func sendThreeDS2(for transaction: OPPWAMobile.OPPTransaction, with authParams: Swift.String, _ completionHandler: @escaping (OPPWAMobile.OPPTransaction, Foundation.NSError?) -> Swift.Void)
+  @objc final public func validation(for brands: [Swift.String], checkoutID: Swift.String, _ completionHandler: @escaping ([OPPWAMobile.OPPBrandInfo]?, Foundation.NSError?) -> Swift.Void)
+  @objc final public func binInfo(for bin: Swift.String, checkoutID: Swift.String, _ completionHandler: @escaping (OPPWAMobile.OPPBinInfo?, Foundation.NSError?) -> Swift.Void)
+  @objc final public func idealBanks(for checkoutID: Swift.String, _ completionHandler: @escaping ([[Swift.String : Any]]?, Foundation.NSError?) -> Swift.Void)
+  @objc final public func appleToken(for checkoutID: Swift.String, _ completionHandler: @escaping (Swift.String?, Foundation.NSError?) -> Swift.Void)
+  @objc final public func checkoutData(for checkoutID: Swift.String, _ completionHandler: @escaping (OPPWAMobile.OPPCheckoutData?, Foundation.NSError?) -> Swift.Void)
+  @objc deinit
 }
 @objc public enum OPPCardBrandInfoCvvMode : Swift.Int {
   case none
@@ -99,6 +133,25 @@ import ipworks3ds_sdk
   @objc public var isMobilePhoneRequired: Swift.Bool
   @objc public init?(validationRegex: Swift.String, detectionRegex: Swift.String?, pattern: Swift.String)
   @objc convenience public init?(json: Swift.Dictionary<Swift.String, Any>)
+  @objc deinit
+}
+@objc final public class OPPWASProcessor : ObjectiveC.NSObject, OPPWAMobile.OPPWAProcessorProtocol {
+  final public var getNavigationController: (() -> UIKit.UINavigationController)?
+  final public var onThreeDSConfigRequired: ((OPPWAMobile.OPPThreeDSConfig?) -> Swift.Void)?
+  @objc final public var threeDSManager: OPPWAMobile.OPPSThreeDSManager?
+  final public let mode: OPPWAMobile.OPPProviderMode
+  final public let service: (any OPPWAMobile.OPPWAProcessorServiceProtocol)?
+  @objc public init(threeDSManager: OPPWAMobile.OPPSThreeDSManager?, mode: OPPWAMobile.OPPProviderMode, service: any OPPWAMobile.OPPWAProcessorServiceProtocol)
+  @objc final public func send(transaction: OPPWAMobile.OPPTransaction, toEndPoint: Swift.String, _ completionHandler: @escaping (OPPWAMobile.OPPTransaction, Foundation.NSError?) -> Swift.Void)
+  @objc final public func requestCheckoutInfo(withCheckoutID checkoutID: Swift.String, _ completionHandler: @escaping (OPPWAMobile.OPPCheckoutInfo?, Foundation.NSError?) -> Swift.Void)
+  @objc final public func requestLogoURLs(forPaymentBrands paymentBrands: [Swift.String], _ completionHandler: @escaping ([Swift.String : Foundation.URL]?, Foundation.NSError?) -> Swift.Void)
+  @objc final public func sendThreeDS2(authParams: Swift.String, transaction: OPPWAMobile.OPPTransaction, _ completionHandler: @escaping (OPPWAMobile.OPPTransaction, Foundation.NSError?) -> Swift.Void)
+  @objc final public func requestValidations(forPaymentBrands paymentBrands: [Swift.String], checkoutID: Swift.String, _ completionHandler: @escaping ([OPPWAMobile.OPPBrandInfo]?, Foundation.NSError?) -> Swift.Void)
+  @objc final public func requestBinInfo(withCheckoutID checkoutID: Swift.String, bin: Swift.String, _ completionHandler: @escaping (OPPWAMobile.OPPBinInfo?, Foundation.NSError?) -> Swift.Void)
+  @objc final public func requestIdealBanks(withCheckoutID checkoutID: Swift.String, _ completionHandler: @escaping ([[Swift.String : Any]]?, Foundation.NSError?) -> Swift.Void)
+  @objc final public func requestApplesTokenId(withCheckoutID checkoutID: Swift.String, _ completionHandler: @escaping (Swift.String?, Foundation.NSError?) -> Swift.Void)
+  @objc final public func requestCheckoutData(withCheckoutID checkoutID: Swift.String, _ completionHandler: @escaping (OPPWAMobile.OPPCheckoutData?, Foundation.NSError?) -> Swift.Void)
+  @objc final public func securityWarnings(withCompletionHandler completionHandler: @escaping ([ipworks3ds_sdk.Warning]?, Foundation.NSError?) -> Swift.Void)
   @objc deinit
 }
 @_inheritsConvenienceInitializers @_hasMissingDesignatedInitializers @objc public class OPPCheckoutLocalization : ObjectiveC.NSObject {
@@ -217,6 +270,11 @@ import ipworks3ds_sdk
   @objc public func localizedString(forDeprecatedKey deprecatedKey: Swift.String, actualKey: Swift.String, defaultValue: Swift.String?) -> Swift.String
   @objc deinit
 }
+@_inheritsConvenienceInitializers @objc public class OPPBrowserData : ObjectiveC.NSObject {
+  @objc public static func m3dspAddWebThreeDSParams(to params: OPPWAMobile.OPPPaymentParams, controller: UIKit.UINavigationController, _ completionHandler: @escaping () -> Swift.Void)
+  @objc override dynamic public init()
+  @objc deinit
+}
 @_inheritsConvenienceInitializers @objc public class OPPApplePayUtil : ObjectiveC.NSObject {
   @objc public static func applePayPaymentRequest(for request: PassKit.PKPaymentRequest?, and checkoutInfo: OPPWAMobile.OPPCheckoutInfo?) -> PassKit.PKPaymentRequest?
   @objc public static func canSubmitApplePayRequest(for request: PassKit.PKPaymentRequest?) -> Swift.Bool
@@ -266,6 +324,28 @@ import ipworks3ds_sdk
   @objc override dynamic public init()
   @objc deinit
 }
+@objc final public class OPPWASPaymentProvider : OPPWAMobile.OPPPaymentProvider {
+  final public var processor: (any OPPWAMobile.OPPWAProcessorProtocol)?
+  @objc public init(mode: OPPWAMobile.OPPProviderMode, processor: (any OPPWAMobile.OPPWAProcessorProtocol)?)
+  @objc override final public func send(_ transaction: OPPWAMobile.OPPTransaction, toEndpoint endpoint: Swift.String, completionHandler: @escaping (OPPWAMobile.OPPTransaction, (any Swift.Error)?) -> Swift.Void)
+  @objc override final public func submitTransaction(_ transaction: OPPWAMobile.OPPTransaction, completionHandler: @escaping (OPPWAMobile.OPPTransaction, (any Swift.Error)?) -> Swift.Void)
+  @objc override final public func register(_ transaction: OPPWAMobile.OPPTransaction, completionHandler: @escaping (OPPWAMobile.OPPTransaction, (any Swift.Error)?) -> Swift.Void)
+  @objc override final public func requestCheckoutInfo(withCheckoutID checkoutID: Swift.String, completionHandler: @escaping (OPPWAMobile.OPPCheckoutInfo?, (any Swift.Error)?) -> Swift.Void)
+  @objc override final public func requestLogoURLs(forPaymentBrands paymentBrands: [Swift.String], completionHandler: @escaping ([Swift.String : Foundation.URL]?, (any Swift.Error)?) -> Swift.Void)
+  @objc override final public func requestBinInfo(withCheckoutID checkoutID: Swift.String, bin: Swift.String, completionHandler: @escaping (OPPWAMobile.OPPBinInfo?, (any Swift.Error)?) -> Swift.Void)
+  @objc override final public func requestIdealBanks(withCheckoutID checkoutID: Swift.String, completionHandler: @escaping ([[Swift.AnyHashable : Any]]?, (any Swift.Error)?) -> Swift.Void)
+  @objc override final public func securityWarnings(completionHandler: @escaping ([ipworks3ds_sdk.Warning]?, (any Swift.Error)?) -> Swift.Void)
+  @objc override final public func sendThreeDS2AuthParams(_ authParams: Swift.String, transaction: OPPWAMobile.OPPTransaction, completionHandler: @escaping (OPPWAMobile.OPPTransaction, (any Swift.Error)?) -> Swift.Void)
+  @objc override final public func requestApplesTokenId(withCheckoutID checkoutID: Swift.String, completionHandler: @escaping (Swift.String?, (any Swift.Error)?) -> Swift.Void)
+  @objc override final public func requestValidations(forPaymentBrands paymentBrands: [Swift.String], checkoutID: Swift.String, completionHandler: @escaping ([OPPWAMobile.OPPBrandInfo]?, (any Swift.Error)?) -> Swift.Void)
+  @objc override final public func requestCheckoutData(withCheckoutID checkoutID: Swift.String, completionHandler: @escaping (OPPWAMobile.OPPCheckoutData?, (any Swift.Error)?) -> Swift.Void)
+  @objc deinit
+}
+extension OPPWAMobile.OPPWASPaymentProvider : OPPWAMobile.OPPSThreeDSManagerDelegate {
+  @objc final public func onThreeDSChallengeRequired(with completion: @escaping (UIKit.UINavigationController?) -> Swift.Void)
+  @objc final public func onThreeDSConfigRequired(with completion: @escaping (OPPWAMobile.OPPThreeDSConfig?) -> Swift.Void)
+  @objc final public func sendThreeDS2AuthParams(params: Swift.String, transaction: OPPWAMobile.OPPTransaction, _ completionHandler: @escaping (OPPWAMobile.OPPTransaction, Foundation.NSError?) -> Swift.Void)
+}
 @objc extension OPPWAMobile.OPPCashAppPayProcessor {
   @objc public static let FAILED_TO_SIGNING_ORDER_TOKEN: Swift.String
   @objc public static let FAILED_TO_SIGNING_ORDER_TOKEN_DUE_TO_INVALID_AMOUNT: Swift.String
@@ -287,12 +367,35 @@ import ipworks3ds_sdk
   @objc public static let CASH_APP_NETWORK_ERROR: Swift.String
   @objc public static let CASH_APP_API_ERROR: Swift.String
   @objc public static let CASH_APP_UNEXPECTED_ERROR: Swift.String
+  @objc public static let CASH_UP_UNKNOWN_TRANSACTION_STATE: Swift.String
+}
+@objc final public class OPPAmazonPayConfig : OPPWAMobile.OPPBrandConfig {
+  @objc public enum OPPAmazonPayRegion : Swift.Int {
+    case US
+    case DE
+    case UK
+    case FR
+    case IT
+    case ES
+    case JP
+    public init?(rawValue: Swift.Int)
+    public typealias RawValue = Swift.Int
+    public var rawValue: Swift.Int {
+      get
+    }
+  }
+  @objc final public let region: OPPWAMobile.OPPAmazonPayConfig.OPPAmazonPayRegion
+  @objc public init(region: OPPWAMobile.OPPAmazonPayConfig.OPPAmazonPayRegion)
+  @objc override final public var paymentBrand: OPPWAMobile.OPPPaymentBrand {
+    @objc get
+  }
+  @objc deinit
 }
 @objc extension UIKit.UIImageView {
   @objc @_Concurrency.MainActor @preconcurrency dynamic public func loadImage(forPaymentBrand paymentBrand: Swift.String)
   @objc @_Concurrency.MainActor @preconcurrency dynamic public func loadImage(forPaymentBrand paymentBrand: Swift.String, accessibilityId: Swift.String?)
 }
-@objc public protocol NetworkLogger {
+@objc public protocol OPPNetworkLogger {
   @objc func logRequest(_ request: Foundation.URLRequest?)
   @objc func logResponse(_ response: Foundation.URLResponse?)
 }
@@ -394,6 +497,11 @@ import ipworks3ds_sdk
   @objc public func image(forKey key: Swift.String) -> UIKit.UIImage?
   @objc deinit
 }
+@objc final public class OPPAmazonPayResponseParser : ObjectiveC.NSObject {
+  @objc public init(transaction: OPPWAMobile.OPPTransaction)
+  @objc final public func getRedirectUrl(from response: Any) throws -> Foundation.URL
+  @objc deinit
+}
 @_hasMissingDesignatedInitializers @objc final public class OPPLogger : ObjectiveC.NSObject {
   @objc public static func sharedInstance(_ loggerService: (any OPPWAMobile.OPPLoggerServiceProtocol)?) -> OPPWAMobile.OPPLogger?
   @objc final public func updateLogLevel(withString logLevelString: Swift.String?)
@@ -411,6 +519,31 @@ import ipworks3ds_sdk
   @objc final public func sendOldLogs()
   @objc deinit
 }
+@objc public protocol OPPWAProcessorServiceProtocol {
+  @objc func sendTransaction(for transaction: OPPWAMobile.OPPTransaction, endpoint: Swift.String, _ completionHandler: @escaping (OPPWAMobile.OPPTransaction, Foundation.NSError?) -> Swift.Void)
+  @objc func checkoutInfo(for checkoutID: Swift.String, _ completionHandler: @escaping (OPPWAMobile.OPPCheckoutInfo?, Foundation.NSError?) -> Swift.Void)
+  @objc func logoUrls(for brands: [Swift.String], _ completionHandler: @escaping ([Swift.String : Foundation.URL]?, Foundation.NSError?) -> Swift.Void)
+  @objc func sendThreeDS2(for transaction: OPPWAMobile.OPPTransaction, with authParams: Swift.String, _ completionHandler: @escaping (OPPWAMobile.OPPTransaction, Foundation.NSError?) -> Swift.Void)
+  @objc func validation(for brands: [Swift.String], checkoutID: Swift.String, _ completionHandler: @escaping ([OPPWAMobile.OPPBrandInfo]?, Foundation.NSError?) -> Swift.Void)
+  @objc func binInfo(for bin: Swift.String, checkoutID: Swift.String, _ completionHandler: @escaping (OPPWAMobile.OPPBinInfo?, Foundation.NSError?) -> Swift.Void)
+  @objc func idealBanks(for checkoutID: Swift.String, _ completionHandler: @escaping ([[Swift.String : Any]]?, Foundation.NSError?) -> Swift.Void)
+  @objc func appleToken(for checkoutID: Swift.String, _ completionHandler: @escaping (Swift.String?, Foundation.NSError?) -> Swift.Void)
+  @objc func checkoutData(for checkoutID: Swift.String, _ completionHandler: @escaping (OPPWAMobile.OPPCheckoutData?, Foundation.NSError?) -> Swift.Void)
+}
+@objc public protocol OPPWAProcessorProtocol {
+  @objc var threeDSManager: OPPWAMobile.OPPSThreeDSManager? { get set }
+  @objc func send(transaction: OPPWAMobile.OPPTransaction, toEndPoint: Swift.String, _ completionHandler: @escaping (OPPWAMobile.OPPTransaction, Foundation.NSError?) -> Swift.Void)
+  @objc func requestCheckoutInfo(withCheckoutID checkoutID: Swift.String, _ completionHandler: @escaping (OPPWAMobile.OPPCheckoutInfo?, Foundation.NSError?) -> Swift.Void)
+  @objc func requestLogoURLs(forPaymentBrands paymentBrands: [Swift.String], _ completionHandler: @escaping ([Swift.String : Foundation.URL]?, Foundation.NSError?) -> Swift.Void)
+  @objc func sendThreeDS2(authParams: Swift.String, transaction: OPPWAMobile.OPPTransaction, _ completionHandler: @escaping (OPPWAMobile.OPPTransaction, Foundation.NSError?) -> Swift.Void)
+  @objc func requestValidations(forPaymentBrands paymentBrands: [Swift.String], checkoutID: Swift.String, _ completionHandler: @escaping ([OPPWAMobile.OPPBrandInfo]?, Foundation.NSError?) -> Swift.Void)
+  @objc func requestBinInfo(withCheckoutID checkoutID: Swift.String, bin: Swift.String, _ completionHandler: @escaping (OPPWAMobile.OPPBinInfo?, Foundation.NSError?) -> Swift.Void)
+  @objc @available(*, deprecated)
+  func requestIdealBanks(withCheckoutID checkoutID: Swift.String, _ completionHandler: @escaping ([[Swift.String : Any]]?, Foundation.NSError?) -> Swift.Void)
+  @objc func requestApplesTokenId(withCheckoutID checkoutID: Swift.String, _ completionHandler: @escaping (Swift.String?, Foundation.NSError?) -> Swift.Void)
+  @objc func requestCheckoutData(withCheckoutID checkoutID: Swift.String, _ completionHandler: @escaping (OPPWAMobile.OPPCheckoutData?, Foundation.NSError?) -> Swift.Void)
+  @objc func securityWarnings(withCompletionHandler completionHandler: @escaping ([ipworks3ds_sdk.Warning]?, Foundation.NSError?) -> Swift.Void)
+}
 @_inheritsConvenienceInitializers @objc final public class OPPUIUtil : ObjectiveC.NSObject {
   @objc public static func findTopViewController() -> UIKit.UIViewController?
   @objc public static func interfaceOrientation() -> UIKit.UIInterfaceOrientation
@@ -418,7 +551,7 @@ import ipworks3ds_sdk
   @objc override dynamic public init()
   @objc deinit
 }
-@objc public enum NetworkResponseContentType : Swift.Int {
+@objc public enum OPPNetworkResponseContentType : Swift.Int {
   case json
   case image
   case html
@@ -428,17 +561,17 @@ import ipworks3ds_sdk
     get
   }
 }
-@objc public protocol NetworkResponseSerializable {
+@objc public protocol OPPNetworkResponseSerializable {
   @objc var acceptableContentTypes: Swift.Set<Swift.String> { get }
   @objc var acceptableStatusCodes: Foundation.IndexSet { get }
   @objc func validateResponse(_ response: Foundation.URLResponse?, data: Foundation.Data?) -> (any Swift.Error)?
-  @objc func response(data: Foundation.Data?, urlResponse: Foundation.URLResponse?) -> OPPWAMobile.NetworkResponse
+  @objc func response(data: Foundation.Data?, urlResponse: Foundation.URLResponse?) -> OPPWAMobile.OPPNetworkResponse
 }
-@_inheritsConvenienceInitializers @objc final public class NetworkResponseSerializer : ObjectiveC.NSObject {
-  @objc public static var `default`: any OPPWAMobile.NetworkResponseSerializable {
+@_inheritsConvenienceInitializers @objc final public class OPPNetworkResponseSerializer : ObjectiveC.NSObject {
+  @objc public static var `default`: any OPPWAMobile.OPPNetworkResponseSerializable {
     @objc get
   }
-  @objc public static func serializer(contentType: OPPWAMobile.NetworkResponseContentType) -> any OPPWAMobile.NetworkResponseSerializable
+  @objc public static func serializer(contentType: OPPWAMobile.OPPNetworkResponseContentType) -> any OPPWAMobile.OPPNetworkResponseSerializable
   @objc override dynamic public init()
   @objc deinit
 }
@@ -482,7 +615,7 @@ import ipworks3ds_sdk
 extension PassKit.PKPaymentRequest {
   @objc dynamic public func updatePaymentRequest(for mode: OPPWAMobile.OPPProviderMode, tokenId: Swift.String) -> Swift.Bool
 }
-@objc public enum NetworkServiceMethod : Swift.Int {
+@objc public enum OPPNetworkServiceMethod : Swift.Int {
   case get
   case post
   public init?(rawValue: Swift.Int)
@@ -491,7 +624,7 @@ extension PassKit.PKPaymentRequest {
     get
   }
 }
-@_inheritsConvenienceInitializers @objc final public class NetworkJSONResponseSerializer : ObjectiveC.NSObject, OPPWAMobile.NetworkResponseSerializable {
+@_inheritsConvenienceInitializers @objc final public class OPPNetworkJSONResponseSerializer : ObjectiveC.NSObject, OPPWAMobile.OPPNetworkResponseSerializable {
   @objc final public var acceptableContentTypes: Swift.Set<Swift.String> {
     @objc get
   }
@@ -499,7 +632,7 @@ extension PassKit.PKPaymentRequest {
     @objc get
   }
   @objc final public func validateResponse(_ response: Foundation.URLResponse?, data: Foundation.Data?) -> (any Swift.Error)?
-  @objc final public func response(data: Foundation.Data?, urlResponse: Foundation.URLResponse?) -> OPPWAMobile.NetworkResponse
+  @objc final public func response(data: Foundation.Data?, urlResponse: Foundation.URLResponse?) -> OPPWAMobile.OPPNetworkResponse
   @objc override dynamic public init()
   @objc deinit
 }
@@ -536,7 +669,11 @@ extension PassKit.PKPaymentRequest {
   @objc override final public func isEqual(_ object: Any?) -> Swift.Bool
   @objc deinit
 }
-@_inheritsConvenienceInitializers @objc final public class NetworkImageResponseSerializer : ObjectiveC.NSObject, OPPWAMobile.NetworkResponseSerializable {
+@_inheritsConvenienceInitializers @objc final public class OPPWAResponseParser : ObjectiveC.NSObject {
+  @objc override dynamic public init()
+  @objc deinit
+}
+@_inheritsConvenienceInitializers @objc final public class OPPNetworkImageResponseSerializer : ObjectiveC.NSObject, OPPWAMobile.OPPNetworkResponseSerializable {
   @objc final public var acceptableContentTypes: Swift.Set<Swift.String> {
     @objc get
   }
@@ -544,7 +681,7 @@ extension PassKit.PKPaymentRequest {
     @objc get
   }
   @objc final public func validateResponse(_ response: Foundation.URLResponse?, data: Foundation.Data?) -> (any Swift.Error)?
-  @objc final public func response(data: Foundation.Data?, urlResponse: Foundation.URLResponse?) -> OPPWAMobile.NetworkResponse
+  @objc final public func response(data: Foundation.Data?, urlResponse: Foundation.URLResponse?) -> OPPWAMobile.OPPNetworkResponse
   @objc override dynamic public init()
   @objc deinit
 }
@@ -562,18 +699,18 @@ extension PassKit.PKPaymentRequest {
   @objc override dynamic public init()
   @objc deinit
 }
-public typealias NetworkHeaders = [Swift.String : Swift.String]
-public typealias NetworkParameters = [Swift.String : Any]
-@objc final public class NetworkManager : ObjectiveC.NSObject {
-  @objc public init(logger: (any OPPWAMobile.NetworkLogger)? = nil, requestSerializer: any OPPWAMobile.NetworkRequestSerializable = NetworkRequestSerializer.default, responseSerializer: any OPPWAMobile.NetworkResponseSerializable = NetworkResponseSerializer.default, networkExecutor: any OPPWAMobile.NetworkExecutable = NetworkExecutor())
-  @objc final public func execute(api: Swift.String, baseUrl: Foundation.URL? = nil, method: OPPWAMobile.NetworkServiceMethod = .get, parameters: OPPWAMobile.NetworkParameters = [:], headers: OPPWAMobile.NetworkHeaders = [:], completion: @escaping (Any?, (any Swift.Error)?) -> Swift.Void)
+public typealias OPPNetworkHeaders = [Swift.String : Swift.String]
+public typealias OPPNetworkParameters = [Swift.String : Any]
+@objc final public class OPPNetworkManager : ObjectiveC.NSObject {
+  @objc public init(logger: (any OPPWAMobile.OPPNetworkLogger)? = nil, requestSerializer: any OPPWAMobile.OPPNetworkRequestSerializable = OPPNetworkRequestSerializer.default, responseSerializer: any OPPWAMobile.OPPNetworkResponseSerializable = OPPNetworkResponseSerializer.default, networkExecutor: any OPPWAMobile.OPPNetworkExecutable = OPPNetworkExecutor())
+  @objc final public func execute(api: Swift.String, baseUrl: Foundation.URL? = nil, method: OPPWAMobile.OPPNetworkServiceMethod = .get, parameters: OPPWAMobile.OPPNetworkParameters = [:], headers: OPPWAMobile.OPPNetworkHeaders = [:], completion: @escaping (Any?, (any Swift.Error)?) -> Swift.Void)
   @objc deinit
 }
-@_inheritsConvenienceInitializers @objc final public class NetworkJSONRequestSerializer : ObjectiveC.NSObject, OPPWAMobile.NetworkRequestSerializable {
-  @objc final public var contentType: OPPWAMobile.NetworkRequestContentType {
+@_inheritsConvenienceInitializers @objc final public class OPPNetworkJSONRequestSerializer : ObjectiveC.NSObject, OPPWAMobile.OPPNetworkRequestSerializable {
+  @objc final public var contentType: OPPWAMobile.OPPNetworkRequestContentType {
     @objc get
   }
-  @objc final public func getUrlRequest(api: Swift.String, baseUrl: Foundation.URL?, method: OPPWAMobile.NetworkServiceMethod, parameters: OPPWAMobile.NetworkParameters, headers: OPPWAMobile.NetworkHeaders) throws -> Foundation.URLRequest
+  @objc final public func getUrlRequest(api: Swift.String, baseUrl: Foundation.URL?, method: OPPWAMobile.OPPNetworkServiceMethod, parameters: OPPWAMobile.OPPNetworkParameters, headers: OPPWAMobile.OPPNetworkHeaders) throws -> Foundation.URLRequest
   @objc override dynamic public init()
   @objc deinit
 }
@@ -581,10 +718,17 @@ extension OPPWAMobile.OPPLogger {
   @objc final public func lgf_integrationTypeString() -> Swift.String
   @objc final public func lgf_checkoutSettingsDictionary(withSettings settings: OPPWAMobile.OPPCheckoutSettings) -> Swift.Dictionary<Swift.String, Any>
 }
-@_hasMissingDesignatedInitializers @objc public class NetworkResponse : ObjectiveC.NSObject {
+@objc final public class OPPAmazonPayPaymentParams : OPPWAMobile.OPPPaymentParams {
+  @objc final public let configuration: OPPWAMobile.OPPAmazonPayConfig
+  @objc public init(checkoutID: Swift.String, configuration: OPPWAMobile.OPPAmazonPayConfig) throws
+  @objc public static func amazonPayPaymentParamsWith(checkoutID: Swift.String, configuration: OPPWAMobile.OPPAmazonPayConfig) throws -> OPPWAMobile.OPPAmazonPayPaymentParams
+  @objc override final public func dictionaryForExecutingTransaction() -> [Swift.AnyHashable : Any]
   @objc deinit
 }
-@_inheritsConvenienceInitializers @objc final public class NetworkHTMLResponseSerializer : ObjectiveC.NSObject, OPPWAMobile.NetworkResponseSerializable {
+@_hasMissingDesignatedInitializers @objc public class OPPNetworkResponse : ObjectiveC.NSObject {
+  @objc deinit
+}
+@_inheritsConvenienceInitializers @objc final public class OPPNetworkHTMLResponseSerializer : ObjectiveC.NSObject, OPPWAMobile.OPPNetworkResponseSerializable {
   @objc final public var acceptableContentTypes: Swift.Set<Swift.String> {
     @objc get
   }
@@ -592,19 +736,31 @@ extension OPPWAMobile.OPPLogger {
     @objc get
   }
   @objc final public func validateResponse(_ response: Foundation.URLResponse?, data: Foundation.Data?) -> (any Swift.Error)?
-  @objc final public func response(data: Foundation.Data?, urlResponse: Foundation.URLResponse?) -> OPPWAMobile.NetworkResponse
+  @objc final public func response(data: Foundation.Data?, urlResponse: Foundation.URLResponse?) -> OPPWAMobile.OPPNetworkResponse
   @objc override dynamic public init()
   @objc deinit
 }
-@objc public protocol NetworkExecutable {
+@objc public protocol OPPSThreeDSManagerDelegate {
+  @objc func onThreeDSChallengeRequired(with completion: @escaping (UIKit.UINavigationController?) -> Swift.Void)
+  @objc func onThreeDSConfigRequired(with completion: @escaping (OPPWAMobile.OPPThreeDSConfig?) -> Swift.Void)
+  @objc func sendThreeDS2AuthParams(params: Swift.String, transaction: OPPWAMobile.OPPTransaction, _ completionHandler: @escaping (OPPWAMobile.OPPTransaction, Foundation.NSError?) -> Swift.Void)
+}
+@objc public class OPPSThreeDSManager : ObjectiveC.NSObject {
+  @objc weak public var delegate: (any OPPWAMobile.OPPSThreeDSManagerDelegate)?
+  @objc public init(mode: OPPWAMobile.OPPProviderMode)
+  @objc public func proceedWithAppFlow(transaction: OPPWAMobile.OPPTransaction, _ completionHandler: @escaping (OPPWAMobile.OPPTransaction?, Foundation.NSError?) -> Swift.Void)
+  @objc public func proceedWebFlow(with transaction: OPPWAMobile.OPPTransaction?, _ completionHandler: @escaping (OPPWAMobile.OPPTransaction?, Foundation.NSError?) -> Swift.Void)
+  @objc deinit
+}
+@objc public protocol OPPNetworkExecutable {
   @objc func execute(request: Foundation.URLRequest, completion: @escaping (Foundation.Data?, Foundation.URLResponse?, (any Swift.Error)?) -> Swift.Void)
 }
-@_inheritsConvenienceInitializers @objc final public class NetworkExecutor : ObjectiveC.NSObject, OPPWAMobile.NetworkExecutable {
+@_inheritsConvenienceInitializers @objc final public class OPPNetworkExecutor : ObjectiveC.NSObject, OPPWAMobile.OPPNetworkExecutable {
   @objc final public func execute(request: Foundation.URLRequest, completion: @escaping (Foundation.Data?, Foundation.URLResponse?, (any Swift.Error)?) -> Swift.Void)
   @objc override dynamic public init()
   @objc deinit
 }
-@objc public enum NetworkRequestContentType : Swift.Int {
+@objc public enum OPPNetworkRequestContentType : Swift.Int {
   case json
   case url
   public init?(rawValue: Swift.Int)
@@ -613,15 +769,15 @@ extension OPPWAMobile.OPPLogger {
     get
   }
 }
-@objc public protocol NetworkRequestSerializable {
-  @objc var contentType: OPPWAMobile.NetworkRequestContentType { get }
-  @objc func getUrlRequest(api: Swift.String, baseUrl: Foundation.URL?, method: OPPWAMobile.NetworkServiceMethod, parameters: OPPWAMobile.NetworkParameters, headers: OPPWAMobile.NetworkHeaders) throws -> Foundation.URLRequest
+@objc public protocol OPPNetworkRequestSerializable {
+  @objc var contentType: OPPWAMobile.OPPNetworkRequestContentType { get }
+  @objc func getUrlRequest(api: Swift.String, baseUrl: Foundation.URL?, method: OPPWAMobile.OPPNetworkServiceMethod, parameters: OPPWAMobile.OPPNetworkParameters, headers: OPPWAMobile.OPPNetworkHeaders) throws -> Foundation.URLRequest
 }
-@_inheritsConvenienceInitializers @objc final public class NetworkRequestSerializer : ObjectiveC.NSObject {
-  @objc public static var `default`: any OPPWAMobile.NetworkRequestSerializable {
+@_inheritsConvenienceInitializers @objc final public class OPPNetworkRequestSerializer : ObjectiveC.NSObject {
+  @objc public static var `default`: any OPPWAMobile.OPPNetworkRequestSerializable {
     @objc get
   }
-  @objc public static func serializer(contentType: OPPWAMobile.NetworkRequestContentType) -> any OPPWAMobile.NetworkRequestSerializable
+  @objc public static func serializer(contentType: OPPWAMobile.OPPNetworkRequestContentType) -> any OPPWAMobile.OPPNetworkRequestSerializable
   @objc override dynamic public init()
   @objc deinit
 }
@@ -638,32 +794,35 @@ extension OPPWAMobile.OPPLogger {
   @objc override dynamic public init()
   @objc deinit
 }
-@_inheritsConvenienceInitializers @objc final public class NetworkURLRequestSerializer : ObjectiveC.NSObject, OPPWAMobile.NetworkRequestSerializable {
-  @objc final public var contentType: OPPWAMobile.NetworkRequestContentType {
+@_inheritsConvenienceInitializers @objc final public class OPPNetworkURLRequestSerializer : ObjectiveC.NSObject, OPPWAMobile.OPPNetworkRequestSerializable {
+  @objc final public var contentType: OPPWAMobile.OPPNetworkRequestContentType {
     @objc get
   }
-  @objc final public func getUrlRequest(api: Swift.String, baseUrl: Foundation.URL?, method: OPPWAMobile.NetworkServiceMethod, parameters: OPPWAMobile.NetworkParameters, headers: OPPWAMobile.NetworkHeaders) throws -> Foundation.URLRequest
+  @objc final public func getUrlRequest(api: Swift.String, baseUrl: Foundation.URL?, method: OPPWAMobile.OPPNetworkServiceMethod, parameters: OPPWAMobile.OPPNetworkParameters, headers: OPPWAMobile.OPPNetworkHeaders) throws -> Foundation.URLRequest
   @objc override dynamic public init()
   @objc deinit
 }
 extension OPPWAMobile.OPPCardBrandInfoCvvMode : Swift.Equatable {}
 extension OPPWAMobile.OPPCardBrandInfoCvvMode : Swift.Hashable {}
 extension OPPWAMobile.OPPCardBrandInfoCvvMode : Swift.RawRepresentable {}
+extension OPPWAMobile.OPPAmazonPayConfig.OPPAmazonPayRegion : Swift.Equatable {}
+extension OPPWAMobile.OPPAmazonPayConfig.OPPAmazonPayRegion : Swift.Hashable {}
+extension OPPWAMobile.OPPAmazonPayConfig.OPPAmazonPayRegion : Swift.RawRepresentable {}
 extension OPPWAMobile.OPPAnalyticsDataIntegrationType : Swift.Equatable {}
 extension OPPWAMobile.OPPAnalyticsDataIntegrationType : Swift.Hashable {}
 extension OPPWAMobile.OPPAnalyticsDataIntegrationType : Swift.RawRepresentable {}
-extension OPPWAMobile.NetworkResponseContentType : Swift.Equatable {}
-extension OPPWAMobile.NetworkResponseContentType : Swift.Hashable {}
-extension OPPWAMobile.NetworkResponseContentType : Swift.RawRepresentable {}
+extension OPPWAMobile.OPPNetworkResponseContentType : Swift.Equatable {}
+extension OPPWAMobile.OPPNetworkResponseContentType : Swift.Hashable {}
+extension OPPWAMobile.OPPNetworkResponseContentType : Swift.RawRepresentable {}
 extension OPPWAMobile.OPPFeatureSwitch : Swift.Equatable {}
 extension OPPWAMobile.OPPFeatureSwitch : Swift.Hashable {}
 extension OPPWAMobile.OPPFeatureSwitch : Swift.RawRepresentable {}
-extension OPPWAMobile.NetworkServiceMethod : Swift.Equatable {}
-extension OPPWAMobile.NetworkServiceMethod : Swift.Hashable {}
-extension OPPWAMobile.NetworkServiceMethod : Swift.RawRepresentable {}
+extension OPPWAMobile.OPPNetworkServiceMethod : Swift.Equatable {}
+extension OPPWAMobile.OPPNetworkServiceMethod : Swift.Hashable {}
+extension OPPWAMobile.OPPNetworkServiceMethod : Swift.RawRepresentable {}
 extension OPPWAMobile.OPPLogLevel : Swift.Equatable {}
 extension OPPWAMobile.OPPLogLevel : Swift.Hashable {}
 extension OPPWAMobile.OPPLogLevel : Swift.RawRepresentable {}
-extension OPPWAMobile.NetworkRequestContentType : Swift.Equatable {}
-extension OPPWAMobile.NetworkRequestContentType : Swift.Hashable {}
-extension OPPWAMobile.NetworkRequestContentType : Swift.RawRepresentable {}
+extension OPPWAMobile.OPPNetworkRequestContentType : Swift.Equatable {}
+extension OPPWAMobile.OPPNetworkRequestContentType : Swift.Hashable {}
+extension OPPWAMobile.OPPNetworkRequestContentType : Swift.RawRepresentable {}

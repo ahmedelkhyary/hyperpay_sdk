@@ -74,5 +74,6 @@ extern OPPPaymentBrand const OPPPaymentBrandVPay;
 extern OPPPaymentBrand const OPPPaymentBrandYandex;
 extern OPPPaymentBrand const OPPPaymentBrandYandexCheckout;
 extern OPPPaymentBrand const OPPPaymentBrandGenericCard;
+extern OPPPaymentBrand const OPPPaymentBrandAmazonPay;
 
 #endif /* OPPPaymentBrand */
